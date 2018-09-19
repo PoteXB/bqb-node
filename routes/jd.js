@@ -18,7 +18,7 @@ router.get('/union',function (req,res) {
     request.get(options,function (err,response,body) {
         var isLogin = lodash.get(body.match("CPS商品推广 - 京东联盟"),[0]);
         if (!isLogin) {
-            console.log("\n登录失效\n");
+            console.log("\n" + new Date() + "登录失效\n");
             if (CouponSwitch) {
                 CouponSwitch = 0;
                 getJdCookie.jd(
@@ -27,7 +27,7 @@ router.get('/union',function (req,res) {
                         if (value.code) {
                             jdCookies = value.data
                         } else {
-                            console.log("\n" + value.data + "\n");
+                            console.log("\n" + new Date() + value.data + "\n");
                         }
                     }
                 );
@@ -37,7 +37,7 @@ router.get('/union',function (req,res) {
         }
         var couponLink = lodash.get(body.match(/'couponLink':'(.*)?'/),[1]);
         if (!couponLink) {
-            console.log("\n" + '未查到优惠券' + "\n");
+            console.log("\n" + new Date() + '未查到优惠券' + "\n");
             res.send({code:0});
             return
         }

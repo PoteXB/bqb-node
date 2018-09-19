@@ -18,7 +18,7 @@ app.all('*',function (req,res,next) {
     next();
 });
 
-app.use('/jd',jdRouter);
+app.use('/coupon/jd',jdRouter);
 
 app.use(function (req,res,next) {
     next(createError(404));

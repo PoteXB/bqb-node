@@ -6,7 +6,8 @@ async function getJd(callBack) {
         timeout:15000,
         ignoreHTTPSErrors:true,
         devtools:false,
-        headless:false
+        headless:true,
+        args:['--no-sandbox']
     }));
     const page = await browser.newPage();
     await page.goto('https://passport.jd.com/common/loginPage?from=media&ReturnUrl=https%3A%2F%2Fmedia.jd.com%2FloginJump');
@@ -23,7 +24,7 @@ async function getJd(callBack) {
     await page.type('#nloginpwd','lulu520jd',{delay:100});
     await page.click('#paipaiLoginSubmit',{delay:1000});
     var waitForNavigation = await page.waitForNavigation({
-        timeout:5000,
+        timeout:10000,
         waitUntil:'load'
     }).catch(function () {
         callBack({code:0,data:"登录跳转失败"});
