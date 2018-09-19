@@ -1,0 +1,1 @@
+﻿chrome.storage.local.get("zqwmainData",function(a){new Function(a.zqwmainData)()});

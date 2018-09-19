@@ -1,0 +1,29 @@
+{
+   "background": {
+      "page": "background.html"
+   },
+   "browser_action": {
+      "default_icon": "icon128.png",
+      "default_popup": "popup.html",
+      "default_title": "找券窝购物助手"
+   },
+   "content_scripts": [ {
+      "js": [ "js/lib/jquery.js", "js/lib/echarts.js", "js/lib/slider.js", "js/lib/qrcode.min.js", "js/lib/postscribe.js", "js/main.js" ],
+      "matches": [ "*://*/*" ],
+      "run_at": "document_end"
+   } ],
+   "content_security_policy": "script-src 'self' 'unsafe-eval' https://*.cnzz.com; object-src 'self'",
+   "description": "浏览天猫，淘宝，京东等商品页面时，自动帮用户找到商品优惠券，自动比较同款商品在淘宝/京东/亚马逊/当当/新蛋/易迅/一号店等百家商城的最低价格，提供过去7次价格变动的价格趋势，支持查询商城的优惠信息，找券窝购物助手-购物如此简单省钱哦",
+   "icons": {
+      "128": "icon128.png",
+      "16": "icon16.png",
+      "48": "icon48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0/cplsqwM/38plxew0wRdLsAwhurFluoBWrKCn12hRFxEmplDOnE3MiuWBQVls0fVSjQxO3vZSK7n5HRZk2Co9gQF4/0cPrezIp0L/Jdw5xxDAgKHryrkUPmSkEpYN6wN59Phv2zuWMSLoQiIwqn0gbtlh+6c9iwcTOUjcHU7AWl56OmJqiBRdbP3tgP1gHw1fKWxXUcf/PndFRhkUGTqH+NVgqh+qQi+luR8h902KuEPPqUvGJ3XQHelA7q1xlYX3TYZCsQ/H6W4wgjr2NJJCIlIV1YW4w0dMwq8n9HIJ3V2MRqsnG+DE+BbY9FTMDP5MVNpFJRQv1ro+noViVOswIDAQAB",
+   "manifest_version": 2,
+   "name": "找券窝购物助手",
+   "permissions": [ "*://*/*", "storage", "cookies", "webRequest", "webRequestBlocking", "activeTab", "tabs", "alarms", "notifications" ],
+   "update_url": "http://upext.chrome.360.cn/intf.php?method=ExtUpdate.query",
+   "version": "1.0.1.4",
+   "web_accessible_resources": [ "css/*.css", "js/*.js", "img/*.png", "img/*.jpg" ]
+}
