@@ -41,10 +41,15 @@ function saveRedis(req,res,type) {
     client.sadd(allName,uid,function (err,e) {
         if (err) {
             res.end();
+            console.log(err);
             return;
         }
         if (e == 1) {
-            client.hincrby(hourName,hashKey,1,function (err,e) {});
+            client.hincrby(hourName,hashKey,1,function (err,e) {
+                if (err) {
+                    console.log(err);
+                }
+            });
             res.end();
         } else {
             res.end();
@@ -53,10 +58,15 @@ function saveRedis(req,res,type) {
     if (type == 'active') {
         client.sadd(allActive,uid,function (err,e) {
             if (err) {
+                console.log(err);
                 return;
             }
             if (e == 1) {
-                client.hincrby(hourName,allActiveHashKey,1,function (err,e) {});
+                client.hincrby(hourName,allActiveHashKey,1,function (err,e) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
             }
         });
     }
