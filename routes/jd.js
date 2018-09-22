@@ -64,6 +64,8 @@ router.get('/union',function (req,res) {
     });
 });//查找联盟券并第三方接口转链
 router.get('/conLink',function (req,res) {
+    var id = req.query.id;
+    var url = req.query.url;
     request.post('http://japi.jingtuitui.com/api/get_goods_link',
         {
             form:{
@@ -72,7 +74,7 @@ router.get('/conLink',function (req,res) {
                 unionid:'1000405866',
                 positionid:'454564',
                 gid:id,
-                coupon_url:couponLink
+                coupon_url:url
             }
         },
         function (err,response,body) {
