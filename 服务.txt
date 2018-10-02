@@ -1,9 +1,9 @@
-ï¿½ï¿½ï¿½ï¿½Ä£Ê½supervisor 
-ï¿½ï¿½ï¿½ï¿½Ä£Ê½pm2 start
+¿ª·¢Ä£Ê½supervisor 
+ÏßÉÏÄ£Ê½pm2 start
 
 
 
-bin/schedule.js          ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-bin/scheduleclick.js     ï¿½Ö¶ï¿½redisÍ³ï¿½ï¿½ï¿½ï¿½ï¿½
-bin/www      	 	 Í³ï¿½ï¿½ï¿½ï¿½Óºï¿½Ì¨ï¿½ï¿½ï¿½ï¿½
-bin/api			 ï¿½ï¿½ï¿½ï¿½ï¿½Å»ï¿½È¯ï¿½Ó¿ï¿½
+bin/schedule.js          ¶¨Ê±ÈÎÎñ·şÎñ
+bin/scheduleclick.js     ÊÖ¶¯redisÍ³¼ÆÈë¿â
+bin/www      	 	 Í³¼ÆÍâ¼ÓºóÌ¨·şÎñ
+bin/api			 ¶ÔÍâÓÅ»İÈ¯½Ó¿Ú
