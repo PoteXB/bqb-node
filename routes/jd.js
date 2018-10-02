@@ -1,89 +1,76 @@
 var express = require('express');
 var request = require('request');
 var lodash = require('lodash');
-var fs = require('fs-extra');
+// var fs = require('fs-extra');
 var router = express.Router();
-var CouponSwitch = 1;                                               //模拟登录开关
-var getJdCookie = require('../jdCoupon/zhuaCookie.js');             //模拟登录方法
-var jdCookies = fs.readFileSync('jdCoupon/jdCookie.txt','utf-8');
+var apiUrl = 'https://api.open.21ds.cn/jd_api_v1';
+var apkey = 'fd0b4755-79bd-8463-8ca5-e19301a81ba5';
+var unionid = '1000907277';
+var positionid = '1432352431';
 router.get('/union',function (req,res) {
     var id = req.query.id;
-    var options = {
-        url:`https://media.jd.com/gotoadv/goods?keyword=${id}&input_keyword=${id}&hasCoupon=1`,
-        gzip:true,
-        headers:{
-            'Cookie':`thor=${jdCookies}`
-        }
-    };
-    request.get(options,function (err,response,body) {
-        var isLogin = lodash.get(body.match("CPS商品推广 - 京东联盟"),[0]);
-        if (!isLogin) {
-            console.log("\n" + new Date() + "登录失效\n");
-            if (CouponSwitch) {
-                CouponSwitch = 0;
-                getJdCookie.jd(
-                    function (value) {
-                        CouponSwitch = 1;
-                        if (value.code) {
-                            jdCookies = value.data
-                        } else {
-                            console.log("\n" + new Date() + value.data + "\n");
-                        }
-                    }
-                );
-            }
-            res.send({code:0});
-            return
-        }
-        var couponLink = lodash.get(body.match(/'couponLink':'(.*)?'/),[1]);
-        if (!couponLink) {
-            console.log("\n" + new Date() + '未查到优惠券' + "\n");
-            res.send({code:0});
-            return
-        }
-        couponLink = couponLink.replace(/##/g,'=');
-        request.post('http://japi.jingtuitui.com/api/get_goods_link',
-            {
-                form:{
-                    appid:'1809121218514231',
-                    appkey:'799e6a1d5d6815fad7880b6e17c48c18',
-                    unionid:'1000405866',
-                    positionid:'454564',
-                    gid:id,
-                    coupon_url:couponLink
-                }
-            },
-            function (err,response,body) {
-                if (err) {
-                    res.send({code:0});
-                    return
-                }
-                res.send({code:1,data:lodash.attempt(JSON.parse.bind(null,body))});
-            }
-        );
-    });
-});//查找联盟券并第三方接口转链
-router.get('/conLink',function (req,res) {
-    var id = req.query.id;
-    var url = req.query.url;
-    request.post('http://japi.jingtuitui.com/api/get_goods_link',
-        {
-            form:{
-                appid:'1809121218514231',
-                appkey:'799e6a1d5d6815fad7880b6e17c48c18',
-                unionid:'1000405866',
-                positionid:'454564',
-                gid:id,
-                coupon_url:url
-            }
-        },
-        function (err,response,body) {
-            if (err) {
+    if (!id) {
+        res.send({code:0});
+        return
+    }
+    request.get(
+        `${apiUrl}/getjdquanitem?apkey=${apkey}&skulist=${id}`,
+        {timeout:5000},
+        function (error,response,body) {
+            if (error) {
+                console.log("\n" + new Date() + error);
                 res.send({code:0});
                 return
             }
-            res.send({code:1,data:lodash.attempt(JSON.parse.bind(null,body))});
+            var data = lodash.attempt(JSON.parse.bind(null,body));
+            if (!data) {
+                res.send({code:0});
+                return
+            }
+            var link = lodash.get(data,'data.data[0].couponList[0].link');
+            if (!link) {
+                res.send({code:0});
+                return
+            }
+            link = 'https:' + link;
+            var pattern = 'to=([^&]*)';
+            var replaceText = `to=item.jd.com/${id}.html`;
+            if (link.match(pattern)) {
+                link = link.replace(/(to=)([^&]*)/gi,replaceText);
+            }
+            link = encodeURIComponent(link);
+            request.get(
+                `${apiUrl}/getquanitemurl?apkey=${apkey}&couponurl=${link}&materialids=${id}&unionid=${unionid}&positionid=${positionid}`,
+                {timeout:5000},
+                function (error,response,body) {
+                    if (error) {
+                        console.log("\n" + new Date() + error);
+                        res.send({code:0});
+                        return
+                    }
+                    var data = lodash.attempt(JSON.parse.bind(null,body));
+                    if (!data) {
+                        res.send({code:0});
+                        return
+                    }
+                    var linkShort = lodash.get(data,'data.urlList');
+                    if (!lodash.keys(linkShort)[0]) {
+                        res.send({code:0});
+                        return
+                    }
+                    linkShort = linkShort[lodash.keys(linkShort)[0]];
+                    if (!linkShort) {
+                        res.send({code:0});
+                        return
+                    }
+                    res.send({code:1,data:linkShort});
+                }
+            );
         }
-    );
-});//第三方接口转链
+    )
+    ;
+});//京东联盟优惠券
+// router.get('/conLink',function (req,res) {
+//     res.send({code:0});
+// });//第三方接口转链
 module.exports = router;
