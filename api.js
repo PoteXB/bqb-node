@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var jdRouter = require('./routes/jd');
+var tbRouter = require('./routes/tb');
 
 var app = express();
 app.set('views',path.join(__dirname,'views'));
@@ -19,6 +20,7 @@ app.all('*',function (req,res,next) {
 });
 
 app.use('/coupon/jd',jdRouter);
+app.use('/coupon/tb',tbRouter);
 
 app.use(function (req,res,next) {
     next(createError(404));
