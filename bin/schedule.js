@@ -12,6 +12,7 @@ function clear(c,t) {
             c.EXPIRE(item,259200,function () {
                 start++;
                 if (start == arrLength) {
+                    console.log("\n" + new Date() + "入库完成");
                     c.quit();
                 }
             });
@@ -21,12 +22,14 @@ function clear(c,t) {
 var j = schedule.scheduleJob('3 0 0 * * *',function () {
     var client = redis.createClient();
     client.on("error",function (err) {
+        console.log("\n" + new Date() + err);
     });
     var yesDay = moment().subtract(120,'m').format('YYYYMMDD');
     client.KEYS("hour*" + yesDay,function (err,e) {
         var start = 0;
         var arrLength = e.length;
         if (arrLength == 0) {
+            console.log("\n" + new Date() + "入库完成");
             client.quit();
             return
         }

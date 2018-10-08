@@ -1,5 +1,3 @@
-var app = require('express')();
-var http = require('http').Server(app);
 var redis = require("redis");
 var client = redis.createClient();
 var moment = require("moment");
@@ -58,6 +56,4 @@ client.KEYS("hour*" + yesDay,function (err,e) {
             });
         }();
     }
-});
-http.listen(3202,function () {
 });
