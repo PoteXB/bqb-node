@@ -382,6 +382,21 @@ router.post('/adEdit',function (req,res) {
     }
 });
 // 软件日活安装卸载统计
+function chuliNum(num,zhekou) {
+    var relNum = "";
+    if (zhekou == 1) {
+        relNum = num;
+        return relNum
+    }
+    if (num < 100) {
+        relNum = num
+    } else if (num >= 100 && num < 134) {
+        relNum = 111
+    } else if (num >= 134) {
+        relNum = Math.ceil(num * zhekou)
+    }
+    return relNum
+}
 router.post('/count',function (req,res) {
     var jwtValue = jwtTest(req,res);
     if (!jwtValue) {
@@ -390,12 +405,16 @@ router.post('/count',function (req,res) {
     var todayData = [];
     var soft_id = req.body.soft_id;
     var canal_id = req.body.canal_id;
-    if (jwtValue.data.replace(/[^0-9]/ig,'') !== canal_id) {
+    var zhekou = 1;
+    if (jwtValue.role == "user" && (jwtValue.data.replace(/[^0-9]/ig,'') !== canal_id)) {
         res.end();
         return
     }
     var time = req.body.time ? req.body.time : moment().format('YYYYMMDD');
     var todayTime = moment().format('YYYYMMDD');
+    if (jwtValue.role == "user" && (time > 20181016)) {
+        zhekou = 0.75
+    }
     if (time == todayTime) {
         var client = redis.createClient();
         client.on("error",function (err) {
@@ -433,7 +452,15 @@ router.post('/count',function (req,res) {
                                 newActive_num += data[j] * 1;
                             }
                         }
-                        todayData.push({soft_id:soft_id,canal_id:canal_id,time:time,active:active_num,install:install_num,uninstall:uninstall_num,newActive:newActive_num});
+                        todayData.push({
+                            soft_id:soft_id,
+                            canal_id:canal_id,
+                            time:time,
+                            active:chuliNum(active_num,zhekou),
+                            install:chuliNum(install_num,zhekou),
+                            uninstall:chuliNum(uninstall_num,zhekou),
+                            newActive:chuliNum(newActive_num,zhekou)
+                        });
                         start++;
                         if (start == arrLength) {
                             client.quit();
@@ -453,7 +480,15 @@ router.post('/count',function (req,res) {
         db.selectAll(sqlKey,(e,r) => {
             if (r.length) {
                 for (var i = 0,item; item = r[i++];) {
-                    todayData.push({soft_id:item.soft_id,canal_id:item.canal_id,time:item.hour_time,active:item.active_num,install:item.install_num,uninstall:item.uninstall_num,newActive:item.newUse_num})
+                    todayData.push({
+                        soft_id:item.soft_id,
+                        canal_id:item.canal_id,
+                        time:item.hour_time,
+                        active:chuliNum(item.active_num,zhekou),
+                        install:chuliNum(item.install_num,zhekou),
+                        uninstall:chuliNum(item.uninstall_num,zhekou),
+                        newActive:chuliNum(item.newUse_num,zhekou)
+                    })
                 }
             }
             res.status(200).json({"code":20000,"data":todayData});
