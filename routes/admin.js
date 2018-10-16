@@ -12,6 +12,22 @@ var moment = require("moment");
 var multipartMiddleware = multipart();
 var redis = require("redis");
 var router = express.Router();
+function jwtTest(req,res) {
+    var header = req.headers["x-token"];
+    var jwtValue = "";
+    if (header) {
+        jwt.verify(header,'zhaoquano!@#%$#45897',function (err,decoded) {
+            if (err) {
+                res.status(200).json({"code":50014,"message":"无效请求"});
+            } else {
+                jwtValue = decoded;
+            }
+        });
+    } else {
+        res.status(200).json({"code":50008,"message":"无效请求"});
+    }
+    return jwtValue
+}
 router.all('*',function (req,res,next) {
     res.header('Access-Control-Allow-Headers','Content-Type, Content-Length, Authorization, Accept, X-Requested-With , x-token');
     res.header('Access-Control-Allow-Methods','PUT, POST, GET, DELETE, OPTIONS');
@@ -19,22 +35,7 @@ router.all('*',function (req,res,next) {
         res.end();
     }
     else {
-        if (req.url.indexOf('/user/login') > -1 || req.url.indexOf('/getStatis') > -1) {
-            next();
-        } else {
-            var header = req.headers["x-token"];
-            if (header) {
-                jwt.verify(header,'zhaoquano!@#%$#45897',function (err,decoded) {
-                    if (err) {
-                        res.status(200).json({"code":50014,"message":"无效请求"});
-                    } else {
-                        next();
-                    }
-                });
-            } else {
-                res.status(200).json({"code":50008,"message":"无效请求"});
-            }
-        }
+        next();
     }
 });
 // 登录获取权限信息
@@ -56,7 +57,8 @@ router.post('/user/login',function (req,res) {
             res.status(200).json({"code":0,"message":errText});
         } else {
             var token = jwt.sign({
-                data:r[0].uname
+                data:r[0].uname,
+                role:r[0].role
             },'zhaoquano!@#%$#45897',{expiresIn:'24h'});
             resultData = r[0].token;
             res.status(200).json({"code":20000,"data":{"token":token}});
@@ -64,25 +66,34 @@ router.post('/user/login',function (req,res) {
     });
 });
 router.get('/user/info',function (req,res) {
-    let token = JSON.stringify(req.query.token);
-    db.selectAll("select * from user where token = " + token,(e,r) => {
-        if (e) {
-            res.status(200).json({"code":0,"message":"服务器错误"});
-        } else {
-            r = {
-                // name:r[0]["uname"],
-                roles:["admin"],
-                avatar:"https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif"
-            };
-            res.status(200).json({"code":20000,"data":r});
-        }
-    });
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
+    var r = {
+        name:jwtValue.data,
+        roles:[jwtValue.role],
+        avatar:"https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif"
+    };
+    res.status(200).json({"code":20000,"data":r});
 });
 router.post('/user/logout',function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
     res.status(200).json({"code":20000,"data":"success"});
 });
 // 修改开关文件
 router.post('/switch',function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
+    if (jwtValue.role == 'user') {
+        res.end();
+        return
+    }
     var action = req.body.action,
         type = req.body.type,
         soft_id = req.body.soft_id,
@@ -182,6 +193,14 @@ router.post('/switch',function (req,res) {
 });
 // 更新软件插件版本
 router.post('/update',function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
+    if (jwtValue.role == 'user') {
+        res.end();
+        return
+    }
     var action = req.body.action,
         type = req.body.type,
         soft_id = req.body.soft_id,
@@ -241,6 +260,14 @@ router.post('/update',function (req,res) {
     }
 });
 router.post('/updateFile',multipartMiddleware,function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
+    if (jwtValue.role == 'user') {
+        res.end();
+        return
+    }
     var action = req.body.action,
         type = req.body.type,
         soft_id = req.body.soft_id,
@@ -318,6 +345,14 @@ router.post('/updateFile',multipartMiddleware,function (req,res) {
 });
 // 修改插件图文弹窗广告
 router.post('/adEdit',function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
+    if (jwtValue.role == 'user') {
+        res.end();
+        return
+    }
     var action = req.body.action,
         type = req.body.type,
         plug_id = req.body.plug_id,
@@ -348,9 +383,17 @@ router.post('/adEdit',function (req,res) {
 });
 // 软件日活安装卸载统计
 router.post('/count',function (req,res) {
+    var jwtValue = jwtTest(req,res);
+    if (!jwtValue) {
+        return
+    }
     var todayData = [];
     var soft_id = req.body.soft_id;
     var canal_id = req.body.canal_id;
+    if (jwtValue.data.replace(/[^0-9]/ig,'') !== canal_id) {
+        res.end();
+        return
+    }
     var time = req.body.time ? req.body.time : moment().format('YYYYMMDD');
     var todayTime = moment().format('YYYYMMDD');
     if (time == todayTime) {
