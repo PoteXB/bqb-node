@@ -65,6 +65,32 @@ router.post('/user/login',function (req,res) {
         }
     });
 });
+router.post('/user/loginU',function (req,res) {
+    let name = JSON.stringify(req.body.username);
+    let pwd = req.body.password;
+    let errText = '',resultData = '';
+    db.selectAll("select * from user1 where uname = " + name,(e,r) => {
+        if (e) {
+            res.status(200).json({"code":0,"message":"服务器错误"});
+            return
+        }
+        let tt = r.length;
+        if (tt == 0) {
+            errText = "账号不存在";
+            res.status(200).json({"code":0,"message":errText});
+        } else if (pwd != r[0].upwd) {
+            errText = "密码错误";
+            res.status(200).json({"code":0,"message":errText});
+        } else {
+            var token = jwt.sign({
+                data:r[0].uname,
+                role:r[0].role
+            },'zhaoquano!@#%$#45897',{expiresIn:'24h'});
+            resultData = r[0].token;
+            res.status(200).json({"code":20000,"data":{"token":token}});
+        }
+    });
+});
 router.get('/user/info',function (req,res) {
     var jwtValue = jwtTest(req,res);
     if (!jwtValue) {
@@ -390,9 +416,9 @@ function chuliNum(num,zhekou) {
     }
     if (num < 100) {
         relNum = num
-    } else if (num >= 100 && num < 134) {
-        relNum = 111
-    } else if (num >= 134) {
+    } else if (num >= 100 && num < Math.ceil(100 / zhekou)) {
+        relNum = 100
+    } else if (num >= Math.ceil(100 / zhekou)) {
         relNum = Math.ceil(num * zhekou)
     }
     return relNum
@@ -412,8 +438,25 @@ router.post('/count',function (req,res) {
     }
     var time = req.body.time ? req.body.time : moment().format('YYYYMMDD');
     var todayTime = moment().format('YYYYMMDD');
-    if (jwtValue.role == "user" && (time > 20181016)) {
-        zhekou = 0.75
+    if (jwtValue.role == "user") {
+        file.get("/alidata/api.zhaoquano.com/myapp/rule.json",function (status,data) {
+            if (status) {
+                var rule = data[canal_id];
+                var switch1 = 1;
+                for (var i = 0; i < rule.length; i++) {
+                    if (time >= rule[i].time) {
+                        zhekou = rule[i].z;
+                        switch1 = 0;
+                        break;
+                    }
+                }
+                if (switch1) {
+                    zhekou = 1;
+                }
+            } else {
+                res.end();
+            }
+        });
     }
     if (time == todayTime) {
         var client = redis.createClient();
