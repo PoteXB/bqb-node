@@ -385,7 +385,7 @@ router.post('/adEdit',function (req,res) {
         url = '';
     //获取所有广告列表
     if (action == 'getList') {
-        url = `${file.dataUrl}alertAd/${type}/${plug_id}/config.json`;
+        url = `${file.fileUrl}alertAd/${type}/${plug_id}/config.json`;
         file.get(url,function (status,data) {
             if (status) {
                 res.status(200).json({"code":20000,"data":data});
@@ -397,7 +397,7 @@ router.post('/adEdit',function (req,res) {
     //修改广告文件
     else if (action == 'rev') {
         var value = JSON.parse(req.body.value);
-        url = `${file.dataUrl}alertAd/${type}/${plug_id}/config.json`;
+        url = `${file.fileUrl}alertAd/${type}/${plug_id}/config.json`;
         file.revise(url,value,function (status,data) {
             if (status) {
                 res.status(200).json({"code":20000,"message":"保存成功"});
@@ -405,6 +405,10 @@ router.post('/adEdit',function (req,res) {
                 res.status(200).json({"code":0,"data":data,"message":"保存失败"});
             }
         });
+    }
+    //刷新CDN
+    else if (action == 'fresh') {
+        console.log(1);
     }
 });
 // 软件日活安装卸载统计

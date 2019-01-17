@@ -3,8 +3,8 @@ var request = require('request');
 var lodash = require('lodash');
 // var fs = require('fs-extra');
 var router = express.Router();
-var pid = 'mm_114987072_44144030_416992187';
-var tbName = '%e6%98%94%e4%ba%ba%e5%b0%8f%e4%b8%9c';
+var pid = 'mm_45810589_44050141_407492367';
+var tbName = 'tb932560225';
 var apkey = 'fd0b4755-79bd-8463-8ca5-e19301a81ba5';
 router.get('/union',function (req,res) {
     var id = req.query.id;
