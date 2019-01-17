@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var countRouter = require('./routes/count');
+var ruleRouter = require('./routes/rule');
 var adminRouter = require('./routes/admin');
 
 var app = express();
@@ -20,6 +21,7 @@ app.all('*',function (req,res,next) {
 });
 
 app.use('/count',countRouter);
+app.use('/rule',ruleRouter);
 app.use('/admin',adminRouter);
 
 app.use(function (req,res,next) {
