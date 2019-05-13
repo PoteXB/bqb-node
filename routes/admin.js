@@ -9,6 +9,7 @@ var jwt = require('jsonwebtoken');
 var multipart = require('connect-multiparty');
 //时间模块
 var moment = require("moment");
+var CDN = require('../sever/admin/ypyCDN.js');
 var multipartMiddleware = multipart();
 var redis = require("redis");
 var router = express.Router();
@@ -259,6 +260,7 @@ router.post('/novel/edit',multipartMiddleware,function (req,res) {
                         return
                     }
                     file.writeJson(jsonPath,JSON.stringify(newJson));
+                    CDN.refreshCdn(CDNUrl);
                     res.status(200).json({"code":20000,"data":newJson});
                 })
             });
