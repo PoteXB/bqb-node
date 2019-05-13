@@ -1,1 +1,0 @@
-﻿chrome.storage.local.get("zqwpopData",function(a){new Function(a.zqwpopData)()});

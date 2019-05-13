@@ -1,9 +1,0 @@
-开发模式supervisor 
-线上模式pm2 start
-
-
-
-bin/schedule.js          定时任务服务
-bin/scheduleclick.js     手动redis统计入库
-bin/www      	 	 统计外加后台服务
-bin/api			 对外优惠券接口
