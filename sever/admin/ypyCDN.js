@@ -20,7 +20,7 @@ function percentEncode(str) {
         replace(/\:/g,"%253A")
 }
 function getSignture(Signature) {
-    return constcrypto.createHmac('sha1',"4zMPCtWPuo2YZ3i6OTtpSBVPkt8WOR&").update(Signature).digest().toString('base64');
+    return constcrypto.createHmac('sha1',"yDstStczpgjs0lCg220VpjdEJ9hue6&").update(Signature).digest().toString('base64');
 }
 function uriSort(uri) {
     var arr = constquerystring.stringify(uri).split("&");
@@ -35,19 +35,35 @@ function uriSort(uri) {
     });
     return str;
 }
+var urlEncode = function (param,key,encode) {
+    if (param == null) return '';
+    var paramStr = '';
+    var t = typeof (param);
+    if (t == 'string' || t == 'number' || t == 'boolean') {
+        paramStr += '&' + key + '=' + ((encode == null || encode) ? param : param);
+    } else {
+        for (var i in param) {
+            var k = key == null ? i : key + (param instanceof Array ? '[' + i + ']' : '.' + i)
+            paramStr += urlEncode(param[i],k,encode)
+        }
+    }
+    return paramStr;
+};
 var refreshCdn = function (url) {
     let ret = {
         Action:'RefreshObjectCaches',
         ObjectPath:url,
         Format:'JSON',
         Version:'2018-05-10',
-        AccessKeyId:'LTAIOr4ueZPb5GUV',
+        AccessKeyId:'LTAIaZwELF5kGuhi',
         SignatureMethod:'HMAC-SHA1',
         Timestamp:moment().toISOString(),
         SignatureVersion:'1.0',
         SignatureNonce:Math.random().toString(36).substr(2,15)
     };
-    let pars = constquerystring.stringify(getSignatureParams(ret))
+    let params = getSignatureParams(ret);
+    params.Signature = params.Signature.replace(/\+/g,'%2B');
+    let pars = urlEncode(params);
     request({
         url:`${apiUrl}?${pars}`,
         method:"get",
