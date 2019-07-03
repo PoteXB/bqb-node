@@ -1,0 +1,6 @@
+简单启动
+node ./bin/www
+异步刷新
+supervisor ./bin/www
+线上启动
+pm2 start ./bin/www

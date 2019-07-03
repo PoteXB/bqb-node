@@ -14,6 +14,8 @@ var CDN = require('../sever/admin/ypyCDN.js');
 var multipartMiddleware = multipart();
 var router = express.Router();
 var tokenKey = "qili!@#%$#45897";
+let env = process.env.NODE_ENV;
+console.log(env);
 var chars = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 var access_token = "23_v0pPriOBGKUtBLFP82BZGYMXzcYJOttV1H1oMyJCx1w96uiO9ggBXsstj3GrpH6RTsAXb6k23x0TqcD3cMZUyt81zsDkADTPrdkOYEC0FQhbFklLmDMWzufx96gIKi9hRRtN7CGYc1IV6yUkIBXgAAAXQM";
 function generateMixed(n) {
@@ -31,9 +33,11 @@ router.all('*',function (req,res,next) {
         res.end();
     }
     else {
-        if ('/user/login' == req.url) {
+        if ('/user/login' == req.url||env == 'development') {
+          console.log(1);
             next();
         } else {
+          console.log(2);
             let header = req.headers["x-token"];
             if (header) {
                 jwt.verify(header,tokenKey,function (err,decoded) {
@@ -98,7 +102,7 @@ router.post('/novel/list',function (req,res) {
     let options = {
         method:'POST',
         url:'https://api.weixin.qq.com/tcb/databasequery',
-        qs:{access_token:access_token},
+        qs:{access_token},
         headers:
             {'content-type':'application/json'},
         body:data,
