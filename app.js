@@ -18,7 +18,7 @@ app.all('*',function (req,res,next) {
     next();
 });
 
-app.use('/admin',adminRouter);
+app.use('/',adminRouter);
 
 app.use(function (req,res,next) {
     next(createError(404));
