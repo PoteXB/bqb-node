@@ -26,10 +26,63 @@ var wxCloud = {
     dataBaseDeleteUrl:'https://api.weixin.qq.com/tcb/databasedelete',            //微信云数据库删除接口地址
     dataBaseUpdateUrl:'https://api.weixin.qq.com/tcb/databaseupdate',            //微信云数据库修改接口地址
     dataBaseCountUrl:'https://api.weixin.qq.com/tcb/databasecount',              //微信云数据库统计记录数接口地址
+    imageRealUrl:'https://api.weixin.qq.com/tcb/batchdownloadfile',              //微信云图片换取真实地址接口地址
 };
 var lock = 0;         //微信token失效锁
-var access_token = "23_xSf0NX1blpPwwIVa2_dduYSZFQQ8n4Q-9aH3k0D0N2UKiq-4kWtO7DnlL5wNi1iQYHrMfgC9GxyA1gMErIvEu9IYfZoBHLisuIERgNu5FUtnMxpPvTxkhNyVxsCHYAI5lBNOha5Tsqgx7X3LKUEeABATDN";
+var access_token = "23_luDr3jgo_KBdZ52ijJ3YlW93jGkgR8O5w5usc4yOFujkEZf-hX5gYvETrEYBA2oL2i871mQfQVafx9KPoCNPz7a5Cj4p5_58NYz18kvU5zAPdOikD4SDjZjupBAVvl1cEfFCpwhCvPHgWwbmUPDdAAAPKY";
 var processEnv = process.env.NODE_ENV;
+//图片获取真实地址
+function getImageRealUrl(oldData) {
+    return new Promise((resolve, reject)=>{
+        console.log(oldData);
+        let {env,imageRealUrl} = wxCloud;
+        let data = {
+            "env":env,
+            "file_list":oldData
+        };
+        let options = {
+            method:'POST',
+            url:imageRealUrl,
+            qs:{access_token},
+            headers:{'content-type':'application/json'},
+            body:data,
+            json:true
+        };
+        if (lock) {
+            reject("lock");
+            return
+        }
+        request(options,function (error,response,body) {
+            // console.log(body);
+            if (error) {
+                reject("error");
+                return
+            }
+            if (body.errcode == 42001 || body.errcode == 41001) {
+                lock = 1;
+                getAccessToken();
+                reject("lock");
+            } else {
+                resolve()
+            }
+        });
+    })
+}
+let aaaa=[
+    "{\"_id\":\"223cb4db-fd4f-4215-b734-18e6bf672030\",\"icon\":\"cloud://test-39qs6.7465-test-39qs6/aaaaa.png\",\"name\":\"undefined\",\"num\":1,\"sort\":1,\"state\":1,\"updateTime\":{\"$date\":1562251006124}}"
+];
+let bbbb=aaaa.map((v)=>{
+    let value=JSON.parse(v);
+    return {
+        "fileid":value.icon,
+        "max_age":7200
+    }
+});
+getImageRealUrl(bbbb).then((data)=>{
+    // console.log(data);
+}).catch((e)=>{
+    // console.log(e);
+});
 //获取最新token值
 function getAccessToken() {
     utils.getAccessToken().then((body) => {
@@ -177,7 +230,6 @@ router.post('/emoteGroup/list',function (req,res) {
         json:true
     };
     if (lock) {
-        //请求微信token路由上锁
         res.status(200).json({"code":20000,"data":{"lock":true}});
         return
     }
@@ -191,6 +243,16 @@ router.post('/emoteGroup/list',function (req,res) {
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
         } else {
+            if (body.errcode==0){
+                let needChange=body.data.map((v)=>{
+                    let value=JSON.parse(v);
+                    return {
+                        "fileid":value.icon,
+                        "max_age":7200
+                    }
+                });
+                getImageRealUrl(needChange)
+            }
             res.status(200).json({"code":20000,"data":body});
         }
     });
@@ -433,7 +495,6 @@ router.post('/emote/list',function (req,res) {
         json:true
     };
     if (lock) {
-        //请求微信token路由上锁
         res.status(200).json({"code":20000,"data":{"lock":true}});
         return
     }
@@ -539,7 +600,7 @@ router.post('/emote/update',function (req,res) {
         }
     });
 });
-// 表情包修改表情
+// 表情包或者单个表情上下架
 router.post('/emoteAll/updateState',function (req,res) {
     let {body} = req;
     let {id,type,state} = body;
