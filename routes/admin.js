@@ -29,12 +29,11 @@ var wxCloud = {
     imageRealUrl:'https://api.weixin.qq.com/tcb/batchdownloadfile',              //微信云图片换取真实地址接口地址
 };
 var lock = 0;         //微信token失效锁
-var access_token = "23_luDr3jgo_KBdZ52ijJ3YlW93jGkgR8O5w5usc4yOFujkEZf-hX5gYvETrEYBA2oL2i871mQfQVafx9KPoCNPz7a5Cj4p5_58NYz18kvU5zAPdOikD4SDjZjupBAVvl1cEfFCpwhCvPHgWwbmUPDdAAAPKY";
+var access_token = "";
 var processEnv = process.env.NODE_ENV;
 //图片获取真实地址
 function getImageRealUrl(oldData) {
-    return new Promise((resolve, reject)=>{
-        console.log(oldData);
+    return new Promise((resolve,reject) => {
         let {env,imageRealUrl} = wxCloud;
         let data = {
             "env":env,
@@ -53,7 +52,6 @@ function getImageRealUrl(oldData) {
             return
         }
         request(options,function (error,response,body) {
-            // console.log(body);
             if (error) {
                 reject("error");
                 return
@@ -63,30 +61,14 @@ function getImageRealUrl(oldData) {
                 getAccessToken();
                 reject("lock");
             } else {
-                resolve()
+                resolve(body)
             }
         });
     })
 }
-let aaaa=[
-    "{\"_id\":\"223cb4db-fd4f-4215-b734-18e6bf672030\",\"icon\":\"cloud://test-39qs6.7465-test-39qs6/aaaaa.png\",\"name\":\"undefined\",\"num\":1,\"sort\":1,\"state\":1,\"updateTime\":{\"$date\":1562251006124}}"
-];
-let bbbb=aaaa.map((v)=>{
-    let value=JSON.parse(v);
-    return {
-        "fileid":value.icon,
-        "max_age":7200
-    }
-});
-getImageRealUrl(bbbb).then((data)=>{
-    // console.log(data);
-}).catch((e)=>{
-    // console.log(e);
-});
 //获取最新token值
 function getAccessToken() {
     utils.getAccessToken().then((body) => {
-        console.log(body.access_token);
         access_token = body.access_token ? body.access_token : ""
     }).finally(() => {
         lock = 0
@@ -202,9 +184,13 @@ router.post('/emoteGroup/add',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 表情包列表
@@ -219,7 +205,7 @@ router.post('/emoteGroup/list',function (req,res) {
     let offset = utils.accMul(utils.accSub(currentPage,1),pageSize);
     let data = {
         "env":env,
-        "query":`db.collection("${dbEmoteGroupName}").limit(${pageSize}).skip(${offset}).get()`
+        "query":`db.collection("${dbEmoteGroupName}").orderBy("updateTime", "desc").limit(${pageSize}).skip(${offset}).get()`
     };
     let options = {
         method:'POST',
@@ -242,19 +228,44 @@ router.post('/emoteGroup/list',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            if (body.errcode==0){
-                let needChange=body.data.map((v)=>{
-                    let value=JSON.parse(v);
-                    return {
-                        "fileid":value.icon,
-                        "max_age":7200
-                    }
-                });
-                getImageRealUrl(needChange)
-            }
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        let jsonParse = body.data.map((v) => {
+            return JSON.parse(v)
+        });
+        let needChange = jsonParse.map((v) => {
+            return {
+                "fileid":v.icon,
+                "max_age":7200
+            }
+        });
+        if (!needChange.length) {
+            res.status(200).json({"code":20000,"data":body});
+            return
+        }
+        getImageRealUrl(needChange).then((realUrlData) => {
+            if (realUrlData.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":realUrlData});
+                return
+            }
+            jsonParse.map((v,k) => {
+                return v.realIcon = realUrlData.file_list[k].download_url
+            });
+            body.data = jsonParse;
+            res.status(200).json({"code":20000,"data":body});
+        }).catch((err) => {
+            if (err == "lock") {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+            } else {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+            }
+        });
     });
 });
 // 删除表情包
@@ -291,9 +302,13 @@ router.post('/emoteGroup/del',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 修改表情包
@@ -305,14 +320,6 @@ router.post('/emoteGroup/update',function (req,res) {
         res.status(200).json({"code":0,"message":"参数错误"});
         return;
     }
-    let param = {
-        name,
-        icon,
-        state,
-        updateTime:new Date(),
-        sort
-    };
-    console.log(param);
     let data = {
         "env":env,
         "query":`db.collection("${dbEmoteGroupName}").doc("${id}").update({
@@ -347,18 +354,22 @@ router.post('/emoteGroup/update',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 上传资源到小程序云存储
 router.post('/wxCloud/upload',function (req,res) {
     let {body} = req;
-    let {cloudPath,fileContent} = body;
+    let {cloudPath,fileContent,type} = body;
     let {env,invokeCloudFunctionUrl} = wxCloud;
     let data = {
-        cloudPath,
+        cloudPath:`${cloudPath}${utils.generateMixed(8)}${new Date().getTime()}.${type}`,
         fileContent
     };
     let options = {
@@ -382,9 +393,13 @@ router.post('/wxCloud/upload',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 表情包添加表情后修改总数量
@@ -466,10 +481,14 @@ router.post('/emote/add',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            updateGroupNum(groupId);
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        updateGroupNum(groupId);
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 表情包的表情列表
@@ -484,7 +503,7 @@ router.post('/emote/list',function (req,res) {
     let offset = utils.accMul(utils.accSub(currentPage,1),pageSize);
     let data = {
         "env":env,
-        "query":`db.collection("${dbEmoteName}").where({groupId:"${groupId}"}).limit(${pageSize}).skip(${offset}).get()`
+        "query":`db.collection("${dbEmoteName}").orderBy("updateTime", "desc").where({groupId:"${groupId}"}).limit(${pageSize}).skip(${offset}).get()`
     };
     let options = {
         method:'POST',
@@ -507,9 +526,44 @@ router.post('/emote/list',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        let jsonParse = body.data.map((v) => {
+            return JSON.parse(v)
+        });
+        let needChange = jsonParse.map((v) => {
+            return {
+                "fileid":v.image,
+                "max_age":7200
+            }
+        });
+        if (!needChange.length) {
+            res.status(200).json({"code":20000,"data":body});
+            return
+        }
+        getImageRealUrl(needChange).then((realUrlData) => {
+            if (realUrlData.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":realUrlData});
+                return
+            }
+            jsonParse.map((v,k) => {
+                return v.realImage = realUrlData.file_list[k].download_url
+            });
+            body.data = jsonParse;
+            res.status(200).json({"code":20000,"data":body});
+        }).catch((err) => {
+            if (err == "lock") {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+            } else {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+            }
+        });
     });
 });
 // 表情包删除表情
@@ -521,7 +575,10 @@ router.post('/emote/del',function (req,res) {
         res.status(200).json({"code":0,"message":"参数错误"});
         return;
     }
-    let data = {
+    let data = typeof id == "object" ? {
+        "env":env,
+        "query":`db.collection("${dbEmoteName}").where({_id:_.or([_.eq("${id[0]}"),_.eq("${id[1]}")])}).remove()`
+    } : {
         "env":env,
         "query":`db.collection("${dbEmoteName}").doc("${id}").remove()`
     };
@@ -546,10 +603,14 @@ router.post('/emote/del',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            updateGroupNum(groupId);
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        updateGroupNum(groupId);
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 表情包修改表情
@@ -595,9 +656,13 @@ router.post('/emote/update',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 // 表情包或者单个表情上下架
@@ -641,9 +706,13 @@ router.post('/emoteAll/updateState',function (req,res) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
-        } else {
-            res.status(200).json({"code":20000,"data":body});
+            return
         }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
     });
 });
 module.exports = router;
