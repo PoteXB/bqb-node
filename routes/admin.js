@@ -14,6 +14,7 @@ var multipartMiddleware = multipart();
 var utils = require('../utils');
 //时间模块
 var moment = require("moment");
+var createError = require('http-errors');
 var router = express.Router();
 var tokenKey = "qili!@#%$#45897"; //登录秘钥
 var wxCloud = {
@@ -269,47 +270,81 @@ router.post('/emoteGroup/list',function (req,res) {
     });
 });
 // 删除表情包
-router.post('/emoteGroup/del',function (req,res) {
+router.post('/emoteGroup/del',async (req,res) => {
     let {body} = req;
     let {id} = body;
-    let {env,dbEmoteGroupName,dataBaseDeleteUrl} = wxCloud;
+    let {env,dbEmoteName,dbEmoteGroupName,dataBaseDeleteUrl} = wxCloud;
     if (!id) {
         res.status(200).json({"code":0,"message":"参数错误"});
         return;
     }
-    let data = {
-        "env":env,
-        "query":`db.collection("${dbEmoteGroupName}").doc("${id}").remove()`
-    };
-    let options = {
-        method:'POST',
-        url:dataBaseDeleteUrl,
-        qs:{access_token},
-        headers:{'content-type':'application/json'},
-        body:data,
-        json:true
-    };
     if (lock) {
         res.status(200).json({"code":20000,"data":{"lock":true}});
         return
     }
-    request(options,function (error,response,body) {
-        if (error) {
-            res.status(200).json({"code":0,"message":"云开发错误"});
-            return
-        }
-        if (body.errcode == 42001 || body.errcode == 41001) {
-            lock = 1;
-            getAccessToken();
-            res.status(200).json({"code":20000,"data":{"lock":true}});
-            return
-        }
-        if (body.errcode != 0) {
-            res.status(200).json({"code":0,"message":"云开发错误","data":body});
-            return
-        }
-        res.status(200).json({"code":20000,"data":body});
+    let first = await new Promise((resolve,reject) => {
+        let data = {
+            "env":env,
+            "query":`db.collection("${dbEmoteGroupName}").doc("${id}").remove()`
+        };
+        let options = {
+            method:'POST',
+            url:dataBaseDeleteUrl,
+            qs:{access_token},
+            headers:{'content-type':'application/json'},
+            body:data,
+            json:true
+        };
+        request(options,function (error,response,body) {
+            if (error) {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+                return
+            }
+            if (body.errcode == 42001 || body.errcode == 41001) {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+                return
+            }
+            if (body.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":body});
+                return
+            }
+            resolve(body);
+        });
     });
+    let two = await new Promise((resolve,reject) => {
+        let data = {
+            "env":env,
+            "query":`db.collection("${dbEmoteName}").where({groupId:"${id}"}).remove()`
+        };
+        let options = {
+            method:'POST',
+            url:dataBaseDeleteUrl,
+            qs:{access_token},
+            headers:{'content-type':'application/json'},
+            body:data,
+            json:true
+        };
+        request(options,function (error,response,body) {
+            if (error) {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+                return
+            }
+            if (body.errcode == 42001 || body.errcode == 41001) {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+                return
+            }
+            if (body.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":body});
+                return
+            }
+            resolve(body);
+        });
+    });
+    res.status(200).json({"code":20000,"data":first});
 });
 // 修改表情包
 router.post('/emoteGroup/update',function (req,res) {
@@ -665,7 +700,7 @@ router.post('/emote/update',function (req,res) {
         res.status(200).json({"code":20000,"data":body});
     });
 });
-// 表情包或者单个表情上下架
+// 表情上下架
 router.post('/emoteAll/updateState',function (req,res) {
     let {body} = req;
     let {id,type,state} = body;
