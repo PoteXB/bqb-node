@@ -17,8 +17,8 @@ exports.getAccessToken = function () {
     url: 'https://api.weixin.qq.com/cgi-bin/token',
     qs: {
       grant_type: 'client_credential',
-      appid: 'wx52229c71aea7aa79',
-      secret: '3f0f5d27cf5dc83a0f1072a22a27e507'
+      appid: 'wxd4b1a41bdb63206b',
+      secret: 'c95c83cf79b2102f262ad61c8b3d8a38'
     },
     json: true
   };

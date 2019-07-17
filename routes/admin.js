@@ -18,7 +18,7 @@ var createError = require('http-errors');
 var router = express.Router();
 var tokenKey = "qili!@#%$#45897"; //登录秘钥
 var wxCloud = {
-    env:'test-39qs6',  //云环境ID
+    env:'biaoqin-06dee7',  //云环境ID
     invokeCloudFunctionUrl:'https://api.weixin.qq.com/tcb/invokecloudfunction',  //触发微信云服务接口地址
     dbEmoteGroupName:'emoteGroup',                                               //微信云数据库表情包库名字
     dbEmoteName:'emote',                                                         //微信云数据库表情库名字
