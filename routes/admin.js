@@ -22,6 +22,7 @@ var wxCloud = {
     invokeCloudFunctionUrl:'https://api.weixin.qq.com/tcb/invokecloudfunction',  //触发微信云服务接口地址
     dbEmoteGroupName:'emoteGroup',                                               //微信云数据库表情包库名字
     dbEmoteName:'emote',                                                         //微信云数据库表情库名字
+    dbMagicName:'magic',                                                         //微信云数据库表情库名字
     dataBaseQueryUrl:'https://api.weixin.qq.com/tcb/databasequery',              //微信云数据库查询接口地址
     dataBaseAddUrl:'https://api.weixin.qq.com/tcb/databaseadd',                  //微信云数据库添加接口地址
     dataBaseDeleteUrl:'https://api.weixin.qq.com/tcb/databasedelete',            //微信云数据库删除接口地址
@@ -206,7 +207,7 @@ router.post('/emoteGroup/list',function (req,res) {
     let offset = utils.accMul(utils.accSub(currentPage,1),pageSize);
     let data = {
         "env":env,
-        "query":`db.collection("${dbEmoteGroupName}").orderBy("updateTime", "desc").limit(${pageSize}).skip(${offset}).get()`
+        "query":`db.collection("${dbEmoteGroupName}").limit(${pageSize}).skip(${offset}).get()`
     };
     let options = {
         method:'POST',
@@ -438,8 +439,8 @@ router.post('/wxCloud/upload',function (req,res) {
     });
 });
 // 表情包添加表情后修改总数量
-function updateGroupNum(groupId) {
-    let {env,dbEmoteName,dataBaseUpdateUrl,dbEmoteGroupName,dataBaseCountUrl} = wxCloud;
+function updateGroupNum(groupId,type) {
+    let {env,dbEmoteName,dataBaseUpdateUrl,dbEmoteGroupName,dataBaseCountUrl,dbMagicName} = wxCloud;
     let data = {
         "env":env,
         "query":`db.collection("${dbEmoteName}").where({groupId:"${groupId}"}).count()`
@@ -452,13 +453,14 @@ function updateGroupNum(groupId) {
         body:data,
         json:true
     };
+    let updataType = type == "shenqi" ? dbMagicName : dbEmoteGroupName;
     request(options,function (error,response,body) {
         if (error || (body.errcode !== 0)) {
             return
         }
         let data = {
             "env":env,
-            "query":`db.collection("${dbEmoteGroupName}").doc("${groupId}").update({data:{num:${body.count}}})`
+            "query":`db.collection("${updataType}").doc("${groupId}").update({data:{num:${body.count}}})`
         };
         let options = {
             method:'POST',
@@ -474,7 +476,7 @@ function updateGroupNum(groupId) {
 // 表情包添加表情
 router.post('/emote/add',function (req,res) {
     let {body} = req;
-    let {name,image,state,sort,groupId} = body;
+    let {name,image,state,sort,groupId,type} = body;
     let {env,dbEmoteName,dataBaseAddUrl} = wxCloud;
     if (!name || !image || !state || !sort || !groupId) {
         res.status(200).json({"code":0,"message":"参数错误"});
@@ -522,7 +524,7 @@ router.post('/emote/add',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误","data":body});
             return
         }
-        updateGroupNum(groupId);
+        updateGroupNum(groupId,type);
         res.status(200).json({"code":20000,"data":body});
     });
 });
@@ -538,7 +540,7 @@ router.post('/emote/list',function (req,res) {
     let offset = utils.accMul(utils.accSub(currentPage,1),pageSize);
     let data = {
         "env":env,
-        "query":`db.collection("${dbEmoteName}").orderBy("updateTime", "desc").where({groupId:"${groupId}"}).limit(${pageSize}).skip(${offset}).get()`
+        "query":`db.collection("${dbEmoteName}").where({groupId:"${groupId}"}).limit(${pageSize}).skip(${offset}).get()`
     };
     let options = {
         method:'POST',
@@ -604,7 +606,7 @@ router.post('/emote/list',function (req,res) {
 // 表情包删除表情
 router.post('/emote/del',function (req,res) {
     let {body} = req;
-    let {id,groupId} = body;
+    let {id,groupId,type} = body;
     let {env,dbEmoteName,dataBaseDeleteUrl} = wxCloud;
     if (!id || !groupId) {
         res.status(200).json({"code":0,"message":"参数错误"});
@@ -644,7 +646,7 @@ router.post('/emote/del',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误","data":body});
             return
         }
-        updateGroupNum(groupId);
+        updateGroupNum(groupId,type);
         res.status(200).json({"code":20000,"data":body});
     });
 });
@@ -717,6 +719,265 @@ router.post('/emoteAll/updateState',function (req,res) {
             {
               state: ${state},
               updateTime: new Date(),
+            }
+        })`
+    };
+    let options = {
+        method:'POST',
+        url:dataBaseUpdateUrl,
+        qs:{access_token},
+        headers:{'content-type':'application/json'},
+        body:data,
+        json:true
+    };
+    if (lock) {
+        res.status(200).json({"code":20000,"data":{"lock":true}});
+        return
+    }
+    request(options,function (error,response,body) {
+        if (error) {
+            res.status(200).json({"code":0,"message":"云开发错误"});
+            return
+        }
+        if (body.errcode == 42001 || body.errcode == 41001) {
+            lock = 1;
+            getAccessToken();
+            res.status(200).json({"code":20000,"data":{"lock":true}});
+            return
+        }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
+    });
+});
+////////
+// 添加表情神器
+router.post('/magicGroup/add',function (req,res) {
+    let {body} = req;
+    let {name,icon,state,sort} = body;
+    let {env,dbMagicName,dataBaseAddUrl} = wxCloud;
+    if (!name || !icon || !state || !sort) {
+        res.status(200).json({"code":0,"message":"参数错误"});
+        return;
+    }
+    let data = {
+        "env":env,
+        "query":`db.collection("${dbMagicName}").add({
+          data: [
+            {
+              name: "${name}",
+              icon: "${icon}",
+              state: ${state},
+              num: 0,
+              updateTime: new Date(),
+              sort: ${sort}
+            }
+          ]
+        })`
+    };
+    let options = {
+        method:'POST',
+        url:dataBaseAddUrl,
+        qs:{access_token},
+        headers:{'content-type':'application/json'},
+        body:data,
+        json:true
+    };
+    if (lock) {
+        res.status(200).json({"code":20000,"data":{"lock":true}});
+        return
+    }
+    request(options,function (error,response,body) {
+        if (error) {
+            res.status(200).json({"code":0,"message":"云开发错误"});
+            return
+        }
+        if (body.errcode == 42001 || body.errcode == 41001) {
+            lock = 1;
+            getAccessToken();
+            res.status(200).json({"code":20000,"data":{"lock":true}});
+            return
+        }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        res.status(200).json({"code":20000,"data":body});
+    });
+});
+// 表情神器列表
+router.post('/magicGroup/list',function (req,res) {
+    let {body} = req;
+    let {pageSize,currentPage} = body;
+    let {env,dbMagicName,dataBaseQueryUrl} = wxCloud;
+    if (!pageSize || !currentPage) {
+        res.status(200).json({"code":0,"message":"参数错误"});
+        return;
+    }
+    let offset = utils.accMul(utils.accSub(currentPage,1),pageSize);
+    let data = {
+        "env":env,
+        "query":`db.collection("${dbMagicName}").limit(${pageSize}).skip(${offset}).get()`
+    };
+    let options = {
+        method:'POST',
+        url:dataBaseQueryUrl,
+        qs:{access_token},
+        headers:{'content-type':'application/json'},
+        body:data,
+        json:true
+    };
+    if (lock) {
+        res.status(200).json({"code":20000,"data":{"lock":true}});
+        return
+    }
+    request(options,function (error,response,body) {
+        if (error) {
+            res.status(200).json({"code":0,"message":"云开发错误"});
+            return
+        }
+        if (body.errcode == 42001 || body.errcode == 41001) {
+            lock = 1;
+            getAccessToken();
+            res.status(200).json({"code":20000,"data":{"lock":true}});
+            return
+        }
+        if (body.errcode != 0) {
+            res.status(200).json({"code":0,"message":"云开发错误","data":body});
+            return
+        }
+        let jsonParse = body.data.map((v) => {
+            return JSON.parse(v)
+        });
+        let needChange = jsonParse.map((v) => {
+            return {
+                "fileid":v.icon,
+                "max_age":7200
+            }
+        });
+        if (!needChange.length) {
+            res.status(200).json({"code":20000,"data":body});
+            return
+        }
+        getImageRealUrl(needChange).then((realUrlData) => {
+            if (realUrlData.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":realUrlData});
+                return
+            }
+            jsonParse.map((v,k) => {
+                return v.realIcon = realUrlData.file_list[k].download_url
+            });
+            body.data = jsonParse;
+            res.status(200).json({"code":20000,"data":body});
+        }).catch((err) => {
+            if (err == "lock") {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+            } else {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+            }
+        });
+    });
+});
+// 删除表情神器
+router.post('/magicGroup/del',async (req,res) => {
+    let {body} = req;
+    let {id} = body;
+    let {env,dbEmoteName,dbMagicName,dataBaseDeleteUrl} = wxCloud;
+    if (!id) {
+        res.status(200).json({"code":0,"message":"参数错误"});
+        return;
+    }
+    if (lock) {
+        res.status(200).json({"code":20000,"data":{"lock":true}});
+        return
+    }
+    let first = await new Promise((resolve,reject) => {
+        let data = {
+            "env":env,
+            "query":`db.collection("${dbMagicName}").doc("${id}").remove()`
+        };
+        let options = {
+            method:'POST',
+            url:dataBaseDeleteUrl,
+            qs:{access_token},
+            headers:{'content-type':'application/json'},
+            body:data,
+            json:true
+        };
+        request(options,function (error,response,body) {
+            if (error) {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+                return
+            }
+            if (body.errcode == 42001 || body.errcode == 41001) {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+                return
+            }
+            if (body.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":body});
+                return
+            }
+            resolve(body);
+        });
+    });
+    let two = await new Promise((resolve,reject) => {
+        let data = {
+            "env":env,
+            "query":`db.collection("${dbEmoteName}").where({groupId:"${id}"}).remove()`
+        };
+        let options = {
+            method:'POST',
+            url:dataBaseDeleteUrl,
+            qs:{access_token},
+            headers:{'content-type':'application/json'},
+            body:data,
+            json:true
+        };
+        request(options,function (error,response,body) {
+            if (error) {
+                res.status(200).json({"code":0,"message":"云开发错误"});
+                return
+            }
+            if (body.errcode == 42001 || body.errcode == 41001) {
+                lock = 1;
+                getAccessToken();
+                res.status(200).json({"code":20000,"data":{"lock":true}});
+                return
+            }
+            if (body.errcode != 0) {
+                res.status(200).json({"code":0,"message":"云开发错误","data":body});
+                return
+            }
+            resolve(body);
+        });
+    });
+    res.status(200).json({"code":20000,"data":first});
+});
+// 修改表情神器
+router.post('/magicGroup/update',function (req,res) {
+    let {body} = req;
+    let {name,icon,state,sort,id} = body;
+    let {env,dbMagicName,dataBaseUpdateUrl} = wxCloud;
+    if (!id || !name || !icon || !state || !sort) {
+        res.status(200).json({"code":0,"message":"参数错误"});
+        return;
+    }
+    let data = {
+        "env":env,
+        "query":`db.collection("${dbMagicName}").doc("${id}").update({
+          data:
+            {
+              name: "${name}",
+              icon: "${icon}",
+              state: ${state},
+              updateTime: new Date(),
+              sort: ${sort}
             }
         })`
     };
