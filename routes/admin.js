@@ -478,7 +478,7 @@ router.post('/emote/add',function (req,res) {
     let {body} = req;
     let {name,image,state,sort,groupId,type} = body;
     let {env,dbEmoteName,dataBaseAddUrl} = wxCloud;
-    if (!name || !image || !state || !sort || !groupId) {
+    if (!image || !state || !sort || !groupId) {
         res.status(200).json({"code":0,"message":"参数错误"});
         return;
     }
