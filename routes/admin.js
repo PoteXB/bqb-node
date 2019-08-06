@@ -403,39 +403,14 @@ router.post('/emoteGroup/update',function (req,res) {
 router.post('/wxCloud/upload',function (req,res) {
     let {body} = req;
     let {cloudPath,fileContent,type} = body;
-    let {env,invokeCloudFunctionUrl} = wxCloud;
-    let data = {
-        cloudPath:`${cloudPath}${utils.generateMixed(8)}${new Date().getTime()}.${type}`,
-        fileContent
-    };
-    let options = {
-        method:'POST',
-        url:invokeCloudFunctionUrl,
-        qs:{
-            access_token,
-            env:env,
-            name:'upload'
-        },
-        headers:{'content-type':'application/json'},
-        body:data,
-        json:true
-    };
-    request(options,function (error,response,body) {
-        if (error) {
-            res.status(200).json({"code":0,"message":"云开发错误"});
-            return
-        }
-        if (body.errcode == 42001 || body.errcode == 41001) {
-            lock = 1;
-            getAccessToken();
-            res.status(200).json({"code":20000,"data":{"lock":true}});
-            return
-        }
-        if (body.errcode != 0) {
-            res.status(200).json({"code":0,"message":"云开发错误","data":body});
-            return
-        }
-        res.status(200).json({"code":20000,"data":body});
+    let fileName = `${utils.generateMixed(8)}${new Date().getTime()}.${type}`;
+    let url = `/alidata/file.hslyh.com/${cloudPath}${fileName}`;
+    let dataBuffer = Buffer.from(fileContent,'base64');
+    file.writeFile(url,dataBuffer).then(() => {
+        let realUrl = `https://file.hslyh.com/${cloudPath}${fileName}`;
+        res.status(200).json({"code":20000,"data":{"resp_data":JSON.stringify({"fileID":realUrl})}})
+    }).catch(() => {
+        res.status(200).json({"code":0,"message":"上传失败"});
     });
 });
 // 表情包添加表情后修改总数量
@@ -614,7 +589,9 @@ router.post('/emote/del',function (req,res) {
     }
     let data = typeof id == "object" ? {
         "env":env,
-        "query":`db.collection("${dbEmoteName}").where({_id:_.or([_.eq("${id[0]}"),_.eq("${id[1]}")])}).remove()`
+        "query":`db.collection("${dbEmoteName}").where({_id:_.or([${id.map((v) => {
+            return `_.eq("${v}")`
+        }).join(",")}])}).remove()`
     } : {
         "env":env,
         "query":`db.collection("${dbEmoteName}").doc("${id}").remove()`
