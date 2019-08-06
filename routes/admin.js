@@ -237,8 +237,13 @@ router.post('/emoteGroup/list',function (req,res) {
             return
         }
         let jsonParse = body.data.map((v) => {
-            return JSON.parse(v)
+            let item = JSON.parse(v);
+            item.realIcon = item.icon;
+            return item
         });
+        body.data = jsonParse;
+        res.status(200).json({"code":20000,"data":body});
+        return
         let needChange = jsonParse.map((v) => {
             return {
                 "fileid":v.icon,
@@ -545,8 +550,12 @@ router.post('/emote/list',function (req,res) {
             return
         }
         let jsonParse = body.data.map((v) => {
-            return JSON.parse(v)
+            let item = JSON.parse(v);
+            item.realImage = item.image;
+            return item
         });
+        body.data = jsonParse;
+        res.status(200).json({"code":20000,"data":body});
         let needChange = jsonParse.map((v) => {
             return {
                 "fileid":v.image,
@@ -826,8 +835,12 @@ router.post('/magicGroup/list',function (req,res) {
             return
         }
         let jsonParse = body.data.map((v) => {
-            return JSON.parse(v)
+            let item = JSON.parse(v);
+            item.realIcon = item.icon;
+            return item
         });
+        body.data = jsonParse;
+        res.status(200).json({"code":20000,"data":body});
         let needChange = jsonParse.map((v) => {
             return {
                 "fileid":v.icon,
