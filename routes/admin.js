@@ -412,7 +412,7 @@ router.post('/wxCloud/upload',function (req,res) {
     let url = `/alidata/file.hslyh.com/${cloudPath}${fileName}`;
     let dataBuffer = Buffer.from(fileContent,'base64');
     file.writeFile(url,dataBuffer).then(() => {
-        let realUrl = `https://file.hslyh.com/${cloudPath}${fileName}`;
+        let realUrl = `http://file.hslyh.com/${cloudPath}${fileName}`;
         res.status(200).json({"code":20000,"data":{"resp_data":JSON.stringify({"fileID":realUrl})}})
     }).catch(() => {
         res.status(200).json({"code":0,"message":"上传失败"});
