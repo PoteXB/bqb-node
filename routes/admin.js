@@ -58,7 +58,7 @@ function getImageRealUrl(oldData) {
                 reject("error");
                 return
             }
-            if (body.errcode == 42001 || body.errcode == 41001) {
+            if (showToken(body)) {
                 lock = 1;
                 getAccessToken();
                 reject("lock");
@@ -75,6 +75,10 @@ function getAccessToken() {
     }).finally(() => {
         lock = 0
     });
+}
+//判断token过期
+function showToken(body) {
+    return (body.errcode == 42001 || body.errcode == 41001 || body.errcode == 40001)
 }
 router.all('*',function (req,res,next) {
     res.header('Access-Control-Allow-Headers','Content-Type, Content-Length, Authorization, Accept, X-Requested-With , x-token');
@@ -182,7 +186,7 @@ router.post('/emoteGroup/add',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -226,7 +230,7 @@ router.post('/emoteGroup/list',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -306,7 +310,7 @@ router.post('/emoteGroup/del',async (req,res) => {
                 res.status(200).json({"code":0,"message":"云开发错误"});
                 return
             }
-            if (body.errcode == 42001 || body.errcode == 41001) {
+            if (showToken(body)) {
                 lock = 1;
                 getAccessToken();
                 res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -337,7 +341,7 @@ router.post('/emoteGroup/del',async (req,res) => {
                 res.status(200).json({"code":0,"message":"云开发错误"});
                 return
             }
-            if (body.errcode == 42001 || body.errcode == 41001) {
+            if (showToken(body)) {
                 lock = 1;
                 getAccessToken();
                 res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -391,7 +395,7 @@ router.post('/emoteGroup/update',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -494,7 +498,7 @@ router.post('/emote/add',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -539,7 +543,7 @@ router.post('/emote/list',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -623,7 +627,7 @@ router.post('/emote/del',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -676,7 +680,7 @@ router.post('/emote/update',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -726,7 +730,7 @@ router.post('/emoteAll/updateState',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -781,7 +785,7 @@ router.post('/magicGroup/add',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -825,7 +829,7 @@ router.post('/magicGroup/list',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -905,7 +909,7 @@ router.post('/magicGroup/del',async (req,res) => {
                 res.status(200).json({"code":0,"message":"云开发错误"});
                 return
             }
-            if (body.errcode == 42001 || body.errcode == 41001) {
+            if (showToken(body)) {
                 lock = 1;
                 getAccessToken();
                 res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -936,7 +940,7 @@ router.post('/magicGroup/del',async (req,res) => {
                 res.status(200).json({"code":0,"message":"云开发错误"});
                 return
             }
-            if (body.errcode == 42001 || body.errcode == 41001) {
+            if (showToken(body)) {
                 lock = 1;
                 getAccessToken();
                 res.status(200).json({"code":20000,"data":{"lock":true}});
@@ -990,7 +994,7 @@ router.post('/magicGroup/update',function (req,res) {
             res.status(200).json({"code":0,"message":"云开发错误"});
             return
         }
-        if (body.errcode == 42001 || body.errcode == 41001) {
+        if (showToken(body)) {
             lock = 1;
             getAccessToken();
             res.status(200).json({"code":20000,"data":{"lock":true}});
