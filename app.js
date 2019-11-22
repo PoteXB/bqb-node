@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 require('express-async-errors');
 var adminRouter = require('./routes/admin');
+var wxRouter = require('./routes/wx');
 
 var app = express();
 app.set('views',path.join(__dirname,'views'));
@@ -19,6 +20,7 @@ app.all('*',function (req,res,next) {
     next();
 });
 
+app.use('/wx',wxRouter);
 app.use('/',adminRouter);
 
 app.use(function (req,res,next) {
