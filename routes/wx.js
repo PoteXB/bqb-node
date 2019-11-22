@@ -2,7 +2,8 @@ var express = require('express');
 var gifFrames = require('gif-frames');
 var fs = require('fs-extra');
 var gifyParse = require('gify-parse');
-const {loadImage,createCanvas} = require('canvas');
+const {loadImage,createCanvas,registerFont} = require('canvas');
+registerFont('/alidata/api.hslyh.com/app/sever/msyh.ttf', {family: 'msyh'});
 const GIF = require('../sever/gif/gif.js');
 var router = express.Router();
 router.post('/changeGif',function (req,res) {
@@ -14,7 +15,6 @@ router.post('/changeGif',function (req,res) {
         worker:2,
         quality:0,
     });
-    // path = '1.gif';
     function addFrames(images,index) {
         return new Promise(resolve => {
             let i = index ? index : 0;
@@ -32,8 +32,8 @@ router.post('/changeGif',function (req,res) {
                     cxt.drawImage(image,0,0);
                     config.textValue.map((v,k) => {
                         cxt.fillStyle = config.color[k] ? config.color[k] : "";
-                        cxt.font = `${config.italics[k] ? "italic" : "normal"} ${config.bold[k] ? "bold" : "normal"} ${config.size[k]}px sans-serif`;
-                        cxt.fillText(config.textValue[k],config.x[k] / 100 * config.imageWidth,config.y[k] / 100 * config.imageHeight);
+                        cxt.font = `${config.italics[k] ? "italic" : "normal"} ${config.bold[k] ? "bold" : "normal"} ${config.size[k]}px "msyh"`;
+                        cxt.fillText(config.textValue[k],config.x[k] / 100 * image.width,config.y[k] / 100 * image.height);
                     });
                     gif.addFrame(cxt.getImageData(0,0,canvas.width,canvas.height),{
                         delay:delayNum
@@ -44,7 +44,6 @@ router.post('/changeGif',function (req,res) {
         });
     }
     gif.on('finished',buffer => {
-        fs.writeFileSync('/alidata/file.hslyh.com/gif/gif.gif',buffer);
         res.status(200).json({"code":200,"data":buffer.toString('base64')});
     });
     fs.ensureDirSync(`/alidata/file.hslyh.com/gif/${path}`);
