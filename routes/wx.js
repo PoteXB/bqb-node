@@ -6,15 +6,16 @@ const {loadImage,createCanvas,registerFont} = require('canvas');
 registerFont('/alidata/api.hslyh.com/app/sever/msyh.ttf', {family: 'msyh'});
 const GIF = require('../sever/gif/gif.js');
 var router = express.Router();
-router.post('/changeGif',function (req,res) {
+router.get('/changeGif',function (req,res) {
     let path = req.body.id;
     let config = req.body.config;
     let canvas,cxt,delayNum = 0;
     const gif = new GIF({
-        transparent:true,
         worker:2,
         quality:0,
     });
+    // path = '1565138481ZM7PBN9Y1565138481183.gif';
+    // config={"size":["20"],"x":[25],"y":[80],"imageWidth":200,"imageHeight":200,"bold":[true],"italics":[false],"color":["#4D89ED"],"textValue":["祖国我爱你"]};
     function addFrames(images,index) {
         return new Promise(resolve => {
             let i = index ? index : 0;
@@ -25,10 +26,11 @@ router.post('/changeGif',function (req,res) {
                     if (!canvas) {
                         canvas = createCanvas(image.width,image.height);
                         cxt = canvas.getContext('2d');
-                        cxt.fillStyle = 'rgba(255, 255, 255, 0)';
                         cxt.textAlign = 'left';
                         cxt.textBaseline = 'top';
                     }
+                    cxt.fillStyle = "#fff";
+                    cxt.fillRect(0, 0, image.width, image.height);
                     cxt.drawImage(image,0,0);
                     config.textValue.map((v,k) => {
                         cxt.fillStyle = config.color[k] ? config.color[k] : "";
@@ -44,6 +46,7 @@ router.post('/changeGif',function (req,res) {
         });
     }
     gif.on('finished',buffer => {
+        // fs.writeFileSync('/alidata/file.hslyh.com/gif/gif.gif', buffer);
         res.status(200).json({"code":200,"data":buffer.toString('base64')});
     });
     fs.ensureDirSync(`/alidata/file.hslyh.com/gif/${path}`);
